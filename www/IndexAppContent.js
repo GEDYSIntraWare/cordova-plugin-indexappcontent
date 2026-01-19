@@ -58,6 +58,8 @@ IndexAppContent.prototype.setIndexingInterval = function (iMinutes, onSuccess, o
 	exec(onSuccess, onError, "IndexAppContent", "setIndexingInterval", [iMinutes]);
 };
 
+IndexAppContent.prototype.onItemPressed = {dummy: "No handler assigned"};
+
 if (!window.plugins) {
 	window.plugins = {};
 }
