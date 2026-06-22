@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CDVSceneDelegate (IndexAppContent)
 
 - (void)scene:(UIScene *)scene continueUserActivity:(NSUserActivity *)userActivity;
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions;
 
 @end
 

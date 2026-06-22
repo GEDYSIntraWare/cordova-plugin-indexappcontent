@@ -1,17 +1,51 @@
 {
-  "name": "cordova-plugin-indexappcontent",
-  "version": "0.5.0",
-  "description": "Enable on-device searchable app content indexing.",
+  "_from": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#ionic-native",
+  "_id": "cordova-plugin-indexappcontent@0.5.0",
+  "_inBundle": false,
+  "_integrity": "",
+  "_location": "/cordova-plugin-indexappcontent",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "git",
+    "raw": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#ionic-native",
+    "rawSpec": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#ionic-native",
+    "saveSpec": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#ionic-native",
+    "fetchSpec": "https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git",
+    "gitCommittish": "ionic-native"
+  },
+  "_requiredBy": [
+    "#DEV:/",
+    "#USER"
+  ],
+  "_resolved": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#37ceee04aaccb2c034431aae260051d3b45feb22",
+  "_spec": "git+https://github.com/GEDYSIntraWare/cordova-plugin-indexappcontent.git#ionic-native",
+  "_where": "/Users/niklasmerz/Documents/test/goMobilePro",
+  "author": {
+    "name": "Johan Blomgren",
+    "email": "j.blomgr@gmail.com"
+  },
+  "bugs": {
+    "url": "https://github.com/johanblomgren/cordova-plugin-indexappcontent/issues"
+  },
+  "bundleDependencies": false,
   "cordova": {
     "id": "cordova-plugin-indexappcontent",
     "platforms": [
       "ios"
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/johanblomgren/cordova-plugin-indexappcontent"
+  "deprecated": false,
+  "description": "Enable on-device searchable app content indexing.",
+  "devDependencies": {
+    "jshint": "^2.6.0"
   },
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.5.0"
+    }
+  ],
+  "homepage": "https://github.com/johanblomgren/cordova-plugin-indexappcontent#readme",
   "keywords": [
     "CSSearchableItem",
     "Index App Content",
@@ -19,22 +53,15 @@
     "ecosystem:cordova",
     "cordova-ios"
   ],
-  "engines": [
-    {
-      "name": "cordova",
-      "version": ">=3.5.0"
-    }
-  ],
-  "scripts": {
-      "test": "npm run jshint",
-      "jshint": "node node_modules/jshint/bin/jshint www && node node_modules/jshint/bin/jshint src && node node_modules/jshint/bin/jshint tests"
-    },
-  "author": "Johan Blomgren <j.blomgr@gmail.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/johanblomgren/cordova-plugin-indexappcontent/issues"
+  "name": "cordova-plugin-indexappcontent",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johanblomgren/cordova-plugin-indexappcontent.git"
   },
-  "devDependencies": {
-    "jshint": "^2.6.0"
-  }
+  "scripts": {
+    "jshint": "node node_modules/jshint/bin/jshint www && node node_modules/jshint/bin/jshint src && node node_modules/jshint/bin/jshint tests",
+    "test": "npm run jshint"
+  },
+  "version": "0.5.0"
 }

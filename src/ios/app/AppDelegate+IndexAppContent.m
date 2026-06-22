@@ -67,9 +67,18 @@
 {
     if ([userActivity.activityType isEqualToString:CSSearchableItemActionType]) {
         NSString *identifier = userActivity.userInfo[CSSearchableItemActivityIdentifier];
-        NSString *jsFunction = @"window.plugins.indexAppContent.onItemPressed";
-        NSString *params = [NSString stringWithFormat:@"{'identifier':'%@'}", identifier];
-        NSString *result = [NSString stringWithFormat:@"%@(%@)", jsFunction, params];
+        // iOS/macOS may return the identifier in NFD (decomposed) Unicode form,
+        // e.g. U+0055 U+0308 instead of the precomposed U+00DC (Ü).
+        // The GI server stores and expects NFC (precomposed) form, so normalise here.
+        identifier = [identifier precomposedStringWithCanonicalMapping];
+        // Build the JS call using NSJSONSerialization so the identifier is
+        // properly escaped — raw %@-interpolation would silently mangle
+        // identifiers that contain backslashes, single-quotes, or other
+        // special characters (e.g. Notes pointers like server\db.nsf/0/UNID).
+        NSDictionary *payload = @{@"identifier": identifier};
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+        NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSString *result = [NSString stringWithFormat:@"window.plugins.indexAppContent.onItemPressed(%@)", jsonString];
         [self callJavascriptFunctionWhenAvailable:result];
         return YES;
     } else {
@@ -85,12 +94,15 @@
 
     __block void (^checkAndExecute)( ) = ^void( ) {
         NSString *check = @"(window && window.plugins && window.plugins.indexAppContent && typeof window.plugins.indexAppContent.onItemPressed == 'function') ? true : false";
-        IndexAppContent *indexAppContent = [weakSelf.viewController getCommandInstance:@"IndexAppContent"];
-        [weakSelf sendCommand:check webViewEngine:indexAppContent.webViewEngine completionHandler:^(id returnValue, NSError * error) {
+        
+        // Get webViewEngine directly from viewController (cordova-ios@8 compatible)
+        id<CDVWebViewEngineProtocol> webViewEngine = weakSelf.viewController.webViewEngine;
+        
+        [weakSelf sendCommand:check webViewEngine:webViewEngine completionHandler:^(id returnValue, NSError * error) {
             if (error || [returnValue boolValue] == NO) {
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, kCALL_DELAY_MILLISECONDS * NSEC_PER_MSEC), dispatch_get_main_queue(), checkAndExecute);
             } else if ([returnValue boolValue] == YES) {
-                [self sendCommand:command webViewEngine:indexAppContent.webViewEngine completionHandler:nil];
+                [self sendCommand:command webViewEngine:webViewEngine completionHandler:nil];
             }
         }];
     };

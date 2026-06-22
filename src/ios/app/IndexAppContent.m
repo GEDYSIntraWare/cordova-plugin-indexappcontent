@@ -9,6 +9,7 @@
 #import "Cordova/CDVViewController.h"
 #import "UIKit/UITouch.h"
 #import "IndexAppContent.h"
+#import <CoreSpotlight/CoreSpotlight.h>
 
 @interface IndexAppContent () {
     dispatch_group_t _group;
@@ -26,7 +27,80 @@
 
 @implementation IndexAppContent
 
+/**
+ *  NSUserDefaults key used to persist a Spotlight identifier across a cold launch.
+ *  Written by SceneDelegate+IndexAppContent (scene:willConnectToSession:options:)
+ *  and consumed here once the WebView is ready.
+ */
+static NSString *const kIACTmpIdentifier = @"IACTmpIdentifier";
+
 #pragma mark - Public (Overriden)
+
+- (void)pluginInitialize {
+    // Restore Spotlight identifier saved during cold launch (by scene:willConnectToSession:options:).
+    // The SceneDelegate writes it before the WebView exists; we read it here when the WebView is ready.
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString *identifier = [defaults stringForKey:kIACTmpIdentifier];
+    if (identifier) {
+        // iOS/macOS may return the identifier in NFD (decomposed) Unicode form.
+        // The GI server stores and expects NFC (precomposed) form, so normalise here.
+        identifier = [identifier precomposedStringWithCanonicalMapping];
+        NSLog(@"[IndexAppContent] pluginInitialize: found stored Spotlight identifier: %@", identifier);
+        [defaults removeObjectForKey:kIACTmpIdentifier];
+        [defaults synchronize];
+
+        // Build the JS call using NSJSONSerialization so the identifier is
+        // properly escaped — raw %@-interpolation would silently mangle
+        // identifiers that contain backslashes, single-quotes, or other
+        // special characters (e.g. Notes pointers like server\db.nsf/0/UNID).
+        NSDictionary *payload = @{@"identifier": identifier};
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+        NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSString *command = [NSString stringWithFormat:@"window.plugins.indexAppContent.onItemPressed(%@)", jsonString];
+
+        NSLog(@"[IndexAppContent] pluginInitialize: dispatching cold-launch Spotlight command");
+
+        // Poll until the JavaScript handler is registered (Cordova webView may not have
+        // finished loading the app JS yet even though pluginInitialize was called).
+        __weak __typeof(self) weakSelf = self;
+        __block NSString *storedCommand = command;
+        __block int retryCount = 0;
+
+        __block void (^checkAndExecute)(void) = ^void(void) {
+            retryCount++;
+            NSLog(@"[IndexAppContent] pluginInitialize JS attempt #%d", retryCount);
+            __typeof(self) strongSelf = weakSelf;
+            if (!strongSelf) return;
+
+            id<CDVWebViewEngineProtocol> webViewEngine = strongSelf.webViewEngine;
+            if (!webViewEngine) {
+                NSLog(@"[IndexAppContent] pluginInitialize: WebViewEngine not available yet, retrying...");
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 25 * NSEC_PER_MSEC), dispatch_get_main_queue(), checkAndExecute);
+                return;
+            }
+
+            NSString *check = @"(window && window.plugins && window.plugins.indexAppContent && typeof window.plugins.indexAppContent.onItemPressed == 'function') ? true : false";
+            [webViewEngine evaluateJavaScript:check completionHandler:^(id result, NSError *error) {
+                if (error || [result boolValue] == NO) {
+                    NSLog(@"[IndexAppContent] pluginInitialize: JS not ready (attempt #%d), retrying...", retryCount);
+                    if (error) NSLog(@"[IndexAppContent] Error: %@", error);
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 25 * NSEC_PER_MSEC), dispatch_get_main_queue(), checkAndExecute);
+                } else {
+                    NSLog(@"[IndexAppContent] pluginInitialize: JS ready after %d attempts, executing", retryCount);
+                    [webViewEngine evaluateJavaScript:storedCommand completionHandler:^(id _Nullable r, NSError * _Nullable e) {
+                        if (e) {
+                            NSLog(@"[IndexAppContent] pluginInitialize: Error executing JS: %@", e);
+                        } else {
+                            NSLog(@"[IndexAppContent] pluginInitialize: Cold-launch Spotlight command executed successfully");
+                        }
+                    }];
+                }
+            }];
+        };
+
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC), dispatch_get_main_queue(), checkAndExecute);
+    }
+}
 
 - (void)onAppTerminate {
     [[NSUserDefaults standardUserDefaults] synchronize];
